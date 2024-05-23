@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
@@ -42,6 +43,7 @@ const ToggleIcon = ({ isIconActive, toggleIcon }) => (
 const DiemDanh = () => {
   const [studentList, setStudentList] = useState([]);
   const [attendanceTimes, setAttendanceTimes] = useState([]);
+  const [absences, setAbsences] = useState({});
   const { id } = useParams();
   console.log("classroomId: " + id);
 
@@ -49,27 +51,34 @@ const DiemDanh = () => {
     try {
       await axios.post(`http://localhost:8081/api/attendance/classroom/${id}`);
       alert('Attendance records created successfully.');
-      fetchStudents();  // Fetch updated data after creating attendance records
     } catch (error) {
       console.error('Error creating attendance records:', error);
       alert('Failed to create attendance records.');
     }
   };
-  const fetchStudents = async () => {
-    try {
-      const attendanceTimeResponse = await axios.get(`http://localhost:8081/api/attendance/classroom/${id}/times`);
-      const attendanceTime = attendanceTimeResponse.data;
-      console.log("attendanceTime: " + attendanceTime);
-      const response = await axios.get(`http://localhost:8081/students/classroom/${id}`);
-      setStudentList(response.data);
-      setAttendanceTimes(Array.from(attendanceTime));
-    } catch (error) {
-      console.error('Error fetching students:', error);
-    }
-  };
 
-  
   useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const attendanceTimeResponse = await axios.get(`http://localhost:8081/api/attendance/classroom/${id}/times`);
+        const attendanceTime = attendanceTimeResponse.data;
+        console.log("attendanceTime: " + attendanceTime);
+        const response = await axios.get(`http://localhost:8081/students/classroom/${id}`);
+        setStudentList(response.data);
+        setAttendanceTimes(Array.from(attendanceTime));
+
+        const absencesResponse = await axios.get(`http://localhost:8081/enrollments/classroom/${id}/absences`);
+        const absencesData = absencesResponse.data;
+        const absencesMap = absencesData.reduce((acc, absence) => {
+          acc[absence.studentId] = absence;
+          return acc;
+        }, {});
+        setAbsences(absencesMap);
+      } catch (error) {
+        console.error('Error fetching students:', error);
+      }
+    };
+
     fetchStudents();
   }, [id]);
 
@@ -84,8 +93,16 @@ const DiemDanh = () => {
         isAbsent,
         isExcused
       });
+      // Fetch the updated absences count after updating the attendance status
+      const absencesResponse = await axios.get(`http://localhost:8081/enrollments/classroom/${id}/absences`);
+      const absencesData = absencesResponse.data;
+      const absencesMap = absencesData.reduce((acc, absence) => {
+        acc[absence.studentId] = absence;
+        return acc;
+      }, {});
+      setAbsences(absencesMap);
+
       console.log('Update successful:', response.data);
-      fetchStudents();  // Fetch updated data after updating attendance
     } catch (error) {
       console.error('Error updating attendance:', error);
     }
@@ -97,18 +114,26 @@ const DiemDanh = () => {
         if (student.studentId === studentId) {
           const updatedAttendances = student.attendanceRecords.map(attendance => {
             if (attendance.attendanceTime === attendanceTime) {
-              let newIsAbsent = false;
-              let newIsExcused = false;
+              let newIsAbsent = attendance.isAbsent;
+              let newIsExcused = attendance.isExcused;
 
               if (iconName === 'vangCoPhep') {
-                newIsExcused = !attendance.isExcused;
-                newIsAbsent = newIsExcused || attendance.isAbsent;
+                if (attendance.isExcused) {
+                  newIsExcused = false;
+                  newIsAbsent = false;
+                } else {
+                  newIsExcused = true;
+                  newIsAbsent = true;
+                }
               } else if (iconName === 'vangKhongPhep') {
-                newIsAbsent = !attendance.isAbsent;
-                newIsExcused = attendance.isAbsent && !newIsAbsent ? attendance.isExcused : false;
+                if (attendance.isAbsent && !attendance.isExcused) {
+                  newIsAbsent = false;
+                } else {
+                  newIsAbsent = true;
+                  newIsExcused = false;
+                }
               }
 
-              // Call updateAttendanceStatus here after updating the attendance state
               updateAttendanceStatus(studentId, attendanceTime, newIsAbsent, newIsExcused);
 
               return {
@@ -135,20 +160,22 @@ const DiemDanh = () => {
       <div className='fixed top-11 ml-2 p-4 text-xl'>
         <ul className='fixed pl-3 h-16 top-auto flex justify-between w-4/5 bg-gray-200 items-center rounded'>
           <li>Tên Lớp: {studentList.length > 0 ? studentList[0].className : ''}</li>
-          <li onClick={handleAttendance} className='focus:outline-none cursor-pointer text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900'>Điểm danh</li>
+          <li onClick={handleAttendance} className='focus:outline-none cursor-pointer text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900'>Điểm Danh</li>
         </ul>
       </div>
-      <div className="p-4 mt-10">
-        <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-          <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+      <div className='p-4 pt-20'>
+        <table className='w-full text-sm text-left text-gray-500 dark:text-gray-400'>
+          <thead className='text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400'>
             <tr>
               <th scope="col" className="px-6 py-3">STT</th>
               <th scope="col" className="px-6 py-3">Mã sinh viên</th>
               <th scope="col" className="px-6 py-3">Họ Và Tên</th>
               <th scope="col" className="px-6 py-3">Ngày sinh</th>
               <th scope="col" className="px-6 py-3">Email</th>
-              {attendanceTimes.map(time => (
-                <th key={time} colSpan={2} scope="col" className="px-6 py-3 text-center">{time}</th>
+              {attendanceTimes.map((attendanceTime, index) => (
+                <th key={index} scope='col' className='px-6 py-3'>
+                  {attendanceTime}
+                </th>
               ))}
               <th scope="col" className="px-6 py-3 text-center">Vắng có phép</th>
               <th scope="col" className="px-6 py-3 text-center">Vắng không phép</th>
@@ -156,7 +183,7 @@ const DiemDanh = () => {
           </thead>
           <tbody>
             {studentList.map((student, index) => (
-              <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+              <tr key={student.studentId} className='bg-white border-b dark:bg-gray-800 dark:border-gray-700'>
                 <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   {index + 1}
                 </th>
@@ -164,24 +191,27 @@ const DiemDanh = () => {
                 <td className="px-6 py-4">{student.studentName}</td>
                 <td className="px-6 py-4">{student.dob}</td>
                 <td className="px-6 py-4">{student.email}</td>
-                {attendanceTimes.map(time => (
-                  <React.Fragment key={time}>
-                    <td key={time + '-co-phep'} className='text-center cursor-pointer'>
-                      <ToggleIcon
-                        isIconActive={student.attendanceRecords.some(att => att.attendanceTime === time && att.status === 'ABSENT_EXCUSED')}
-                        toggleIcon={() => toggleIcon(student.studentId, time, 'vangCoPhep')}
-                      />
+                {attendanceTimes.map((attendanceTime, index) => {
+                  const attendance = student.attendanceRecords.find(a => a.attendanceTime === attendanceTime) || { isAbsent: false, isExcused: false };
+                  const isExcused = attendance.isExcused;
+                  const isAbsent = attendance.isAbsent;
+                  return (
+                    <td key={index} className='px-6 py-4'>
+                      <div className='flex'>
+                        <ToggleIcon
+                          isIconActive={isExcused}
+                          toggleIcon={() => toggleIcon(student.studentId, attendanceTime, 'vangCoPhep')}
+                        />
+                        <ToggleIcon
+                          isIconActive={isAbsent && !isExcused}
+                          toggleIcon={() => toggleIcon(student.studentId, attendanceTime, 'vangKhongPhep')}
+                        />
+                      </div>
                     </td>
-                    <td key={time + '-khong-phep'} className='text-center cursor-pointer'>
-                      <ToggleIcon
-                        isIconActive={student.attendanceRecords.some(att => att.attendanceTime === time && att.status === 'ABSENT_UNEXCUSED')}
-                        toggleIcon={() => toggleIcon(student.studentId, time, 'vangKhongPhep')}
-                      />
-                    </td>
-                  </React.Fragment>
-                ))}
-                <td className="text-center">{student.excusedAbsenceCount}</td>
-                <td className="text-center">{student.unexcusedAbsenceCount}</td>
+                  );
+                })}
+                <td className="text-center">{absences[student.studentId]?.excusedAbsenceCount || 0}</td>
+                <td className="text-center">{absences[student.studentId]?.unexcusedAbsenceCount || 0}</td>
               </tr>
             ))}
           </tbody>

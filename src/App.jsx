@@ -11,6 +11,7 @@ import DonVang from "./component/teacherComponent/DonVang";
 import Home from "./component/Home";
 import SignUpForm from "./component/authComponent/SignUpForm";
 import LoginForm from "./component/authComponent/LoginForm";
+import ToastMessage from "./ToastMessage";
 
 // eslint-disable-next-line react/prop-types
 function Layout({ children }) {
@@ -40,6 +41,7 @@ function App() {
         <Route path="/detail-class/:id/attendances" element={<Layout> <DiemDanh /> </Layout>} />
         <Route path="/add-class-form" element={<AddClassForm />} />
         <Route path="/edit-class-form/:id" element={<AddClassForm />} />
+        <Route path="/toast-message" element={<ToastMessage />} />
       </Routes>
     </BrowserRouter>
   );
