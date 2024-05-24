@@ -210,11 +210,11 @@ const DiemDanh = () => {
                       <div className='flex'>
                         <ToggleIcon
                           isIconActive={isExcused}
-                          toggleIcon={() => toggleIcon(student.studentId, attendanceTime, 'vangCoPhep')}
+                          toggleIcon={() => toggleIcon(student.studentId, attendanceTime, 'vangCoPhep' || 'PRESENT')}
                         />
                         <ToggleIcon
                           isIconActive={isAbsent && !isExcused}
-                          toggleIcon={() => toggleIcon(student.studentId, attendanceTime, 'vangKhongPhep')}
+                          toggleIcon={() => toggleIcon(student.studentId, attendanceTime, 'vangKhongPhep' || 'PRESENT')}
                         />
                       </div>
                     </td>
