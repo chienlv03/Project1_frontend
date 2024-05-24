@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
+import moment from 'moment';
 
 // eslint-disable-next-line react/prop-types
 const ToggleIcon = ({ isIconActive, toggleIcon }) => (
@@ -48,45 +49,52 @@ const DiemDanh = () => {
   console.log("classroomId: " + id);
 
   const handleAttendance = async () => {
+    const currentTime = moment().format('YYYY-MM-DD HH:mm:ss');
+    console.log("formattedTime: " + currentTime);
     try {
-      await axios.post(`http://localhost:8081/api/attendance/classroom/${id}`);
+      await axios.post(`http://localhost:8081/api/attendance/classroom/${id}`, {
+        attendanceTime: currentTime
+      });
       alert('Attendance records created successfully.');
+      fetchStudents();
     } catch (error) {
       console.error('Error creating attendance records:', error);
       alert('Failed to create attendance records.');
     }
   };
 
+  const fetchStudents = async () => {
+    try {
+      const attendanceTimeResponse = await axios.get(`http://localhost:8081/api/attendance/classroom/${id}/times`);
+      const attendanceTime = attendanceTimeResponse.data;
+      // console.log("attendanceTime: " + attendanceTime);
+      const response = await axios.get(`http://localhost:8081/students/classroom/${id}`);
+      setStudentList(response.data);
+      setAttendanceTimes(Array.from(attendanceTime));
+
+      const absencesResponse = await axios.get(`http://localhost:8081/enrollments/classroom/${id}/absences`);
+      const absencesData = absencesResponse.data;
+      const absencesMap = absencesData.reduce((acc, absence) => {
+        acc[absence.studentId] = absence;
+        return acc;
+      }, {});
+      setAbsences(absencesMap);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    }
+  };
   useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const attendanceTimeResponse = await axios.get(`http://localhost:8081/api/attendance/classroom/${id}/times`);
-        const attendanceTime = attendanceTimeResponse.data;
-        console.log("attendanceTime: " + attendanceTime);
-        const response = await axios.get(`http://localhost:8081/students/classroom/${id}`);
-        setStudentList(response.data);
-        setAttendanceTimes(Array.from(attendanceTime));
-
-        const absencesResponse = await axios.get(`http://localhost:8081/enrollments/classroom/${id}/absences`);
-        const absencesData = absencesResponse.data;
-        const absencesMap = absencesData.reduce((acc, absence) => {
-          acc[absence.studentId] = absence;
-          return acc;
-        }, {});
-        setAbsences(absencesMap);
-      } catch (error) {
-        console.error('Error fetching students:', error);
-      }
-    };
-
     fetchStudents();
-  }, [id]);
+  }, []);
+
+
+
 
   const updateAttendanceStatus = async (studentId, attendanceTime, isAbsent, isExcused) => {
-    console.log("studentId: " + studentId);
-    console.log("attendanceTime: " + attendanceTime);
-    console.log("isAbsent: " + isAbsent);
-    console.log("isExcused: " + isExcused);
+    // console.log("studentId: " + studentId);
+    // console.log("attendanceTime: " + attendanceTime);
+    // console.log("isAbsent: " + isAbsent);
+    // console.log("isExcused: " + isExcused);
     try {
       const response = await axios.put(`http://localhost:8081/api/attendance/student/${studentId}/classroom/${id}`, {
         attendanceTime,
@@ -101,7 +109,6 @@ const DiemDanh = () => {
         return acc;
       }, {});
       setAbsences(absencesMap);
-
       console.log('Update successful:', response.data);
     } catch (error) {
       console.error('Error updating attendance:', error);
@@ -173,12 +180,12 @@ const DiemDanh = () => {
               <th scope="col" className="px-6 py-3">Ngày sinh</th>
               <th scope="col" className="px-6 py-3">Email</th>
               {attendanceTimes.map((attendanceTime, index) => (
-                <th key={index} scope='col' className='px-6 py-3'>
+                <th key={index} scope='col' className='w-6 text-center'>
                   {attendanceTime}
                 </th>
               ))}
-              <th scope="col" className="px-6 py-3 text-center">Vắng có phép</th>
-              <th scope="col" className="px-6 py-3 text-center">Vắng không phép</th>
+              {/* <th scope="col" className="px-6 py-3 text-center">Vắng có phép</th> */}
+              <th scope="col" className="px-6 py-3 text-center">Số lần vắng</th>
             </tr>
           </thead>
           <tbody>
@@ -192,9 +199,12 @@ const DiemDanh = () => {
                 <td className="px-6 py-4">{student.dob}</td>
                 <td className="px-6 py-4">{student.email}</td>
                 {attendanceTimes.map((attendanceTime, index) => {
+                  // console.log("attendanceTime: " + attendanceTime);
                   const attendance = student.attendanceRecords.find(a => a.attendanceTime === attendanceTime) || { isAbsent: false, isExcused: false };
-                  const isExcused = attendance.isExcused;
-                  const isAbsent = attendance.isAbsent;
+                  const isExcused = attendance.isExcused == undefined ? (attendance.status === 'ABSENT_UNEXCUSED' || attendance.status === 'PRESENT' ? false : true) : attendance.isExcused;
+                  const isAbsent = attendance.isAbsent == undefined ? (attendance.status === 'PRESENT' || attendance.status === 'ABSENT_EXCUSED' ? false : true) : attendance.isAbsent;
+                  // const isExcused = attendance.isExcused;
+                  // const isAbsent = attendance.isAbsent;
                   return (
                     <td key={index} className='px-6 py-4'>
                       <div className='flex'>
@@ -210,7 +220,7 @@ const DiemDanh = () => {
                     </td>
                   );
                 })}
-                <td className="text-center">{absences[student.studentId]?.excusedAbsenceCount || 0}</td>
+                {/* <td className="text-center">{absences[student.studentId]?.excusedAbsenceCount || 0}</td> */}
                 <td className="text-center">{absences[student.studentId]?.unexcusedAbsenceCount || 0}</td>
               </tr>
             ))}
