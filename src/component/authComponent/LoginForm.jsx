@@ -1,8 +1,8 @@
 // eslint-disable-next-line no-unused-vars
 import React, { useState } from 'react'
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Spiner from '../../Spiner';
+import { signin } from '../../services/AuthService';
 
 const LoginForm = () => {
     const [email, setEmail] = useState("");
@@ -22,10 +22,13 @@ const LoginForm = () => {
         e.preventDefault();
         setLoading(true);
 
+        const data = { email, password };
+
         try {
-            const response = await axios.post('http://localhost:8080/api/auth/signin', { email, password });
-            console.log(response.data); // Handle successful login
-            // alert("Successful login");
+            const response = await signin(data);
+            console.log(response.data.id); // Handle successful login
+            
+            localStorage.setItem('loginResponse', JSON.stringify(response));
             setError('');
             setTimeout(() => {
                 setLoading(false); // Set loading state to false after 1 second
@@ -120,7 +123,7 @@ const LoginForm = () => {
                                 <button
                                     type="submit"
                                     className={email && password ? "w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800" : "w-full bg-gray-600 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2"}
-                                    // disabled={email && password ? false : true}
+                                    disabled={email && password ? false : true}
                                     onClick={(e) => handleLogin(e)}
                                 >Đăng nhập</button>
                                 <p className="text-sm font-light text-gray-500 dark:text-gray-400">

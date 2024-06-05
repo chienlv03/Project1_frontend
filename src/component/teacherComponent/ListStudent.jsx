@@ -1,22 +1,15 @@
 // eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const ListStudent = () => {
   const [students, setStudents] = useState([]);
 
-  const { id } = useParams()
+  const classId = localStorage.getItem('classId');
+  console.log("classId list student: "+ classId);
 
-  console.log("id class: " + id)
-
-  const location = useLocation();
-  const idClass = location.pathname
-  console.log(idClass)
-
-
-
-  const navigator = useNavigate()
+  const navigate = useNavigate()
 
   useEffect(() => {
     getAllStudent()
@@ -25,18 +18,23 @@ const ListStudent = () => {
 
   const getAllStudent = async () => {
     try {
-      const response = await axios.get(`http://localhost:8081/enrollments/classrooms/${id}/students`);
+      const response = await axios.get(`http://localhost:8080/api/students/information/classroom/${classId}`, { withCredentials: true });
       setStudents(response.data);
     } catch (error) {
       console.error("Error fetching students:", error);
     }
   };
 
+  const handleEditStudent = (student) => {
+    localStorage.setItem('studentId', student.studentId);
+    navigate(`/detail-class/${classId}/edit-student/${student.studentId}`, { state: { student } });
+  };
+
   // eslint-disable-next-line no-unused-vars
   const handleDeleteStudent = async (studentId) => {
     try {
-        await axios.delete(`http://localhost:8081/students/delete/${studentId}/${id}`); // Replace with your actual API endpoint
-        setStudents(students.filter((student) => student.id !== studentId));
+        await axios.delete(`http://localhost:8080/api/students/delete/${studentId}/${classId}`, { withCredentials: true }); // Replace with your actual API endpoint
+        setStudents(students.filter((student) => student.studentId !== studentId));
     } catch (error) {
         console.error('Error deleting class:', error);
     }
@@ -45,13 +43,15 @@ const ListStudent = () => {
   return (
     <div className=' sm:ml-64'>
       <div className="mt-16 px-4 py-1">
-        <div>
-          <ul>
-            <li>Tên lớp: </li>
-            <li>Thời gian bắt đầu: </li>
-          </ul>
-        </div>
-        <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+      <div className="fixed top-12 mt-2 p-2 text-xl">
+        <ul className="fixed pl-3 h-16 top-auto w-4/5 bg-gray-200 items-center rounded">
+          <li>Tên Lớp: {students.length > 0 ? students[0].className : ''}</li>
+          <li>
+            Thời gian bắt đầu: {students.length > 0 ? students[0].startTime : ''}
+          </li>
+        </ul>
+      </div>
+        <table className="w-full mt-16 text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
             <tr>
               <th scope="col" className="px-6 py-3">
@@ -84,13 +84,13 @@ const ListStudent = () => {
                   {index + 1}
                 </th>
                 <td className="px-6 py-4">{student.studentCode}</td>
-                <td className="px-6 py-4">{student.name}</td>
+                <td className="px-6 py-4">{student.studentName}</td>
                 <td className="px-6 py-4">{student.dob}</td>
                 <td className="px-6 py-4">{student.gender}</td>
                 <td className="px-6 py-4">{student.email}</td>
                 <td className="flex items-center px-6 py-4">
-                  <button onClick={() => navigator(`/detail-class/${id}/edit-student/${student.id}`, { state: { student } })} className="font-medium text-blue-600 dark:text-blue-500 hover:underline">Edit</button>
-                  <button onClick={() => handleDeleteStudent(student.id)} className="font-medium text-red-600 dark:text-red-500 hover:underline ms-3">Remove</button>
+                  <button onClick={() => handleEditStudent(student)} className="font-medium text-blue-600 dark:text-blue-500 hover:underline">Sửa</button>
+                  <button onClick={() => handleDeleteStudent(student.studentId)} className="font-medium text-red-600 dark:text-red-500 hover:underline ms-3">Xóa</button>
                 </td>
               </tr>
             ))}

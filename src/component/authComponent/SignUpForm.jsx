@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-unused-vars
 import React, { useState } from 'react';
-import axios from 'axios'; // Make sure to install axios
 import { useNavigate } from 'react-router-dom';
+import { signup } from '../../services/AuthService';
 
 const SignUpForm = () => {
     const [username, setUsername] = useState('');
@@ -18,10 +18,13 @@ const SignUpForm = () => {
             return;
         }
 
+        const data = { username, email, password };
+
         try {
-            const response = await axios.post('http://localhost:8080/api/auth/signup', { username, email, password });
-            console.log(response.data); // Handle successful registration
+            signup(data);
             setError('');
+            alert("Đăng ký thành công")
+            navigate('/sign-in');
         } catch (err) {
             setError(err.response.data.message); // Handle registration error
         }
