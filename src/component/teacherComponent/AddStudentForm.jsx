@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-unused-vars
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
@@ -42,6 +42,8 @@ const AddStudentForm = () => {
   const classId = localStorage.getItem('classId');
   const studentId = localStorage.getItem('studentId');
 
+  // console.log("studentId at AddStudentForm: " + studentId);
+
   useEffect(() => {
     if (location.state?.student) {
       const { student } = location.state;
@@ -55,10 +57,10 @@ const AddStudentForm = () => {
     }
   }, [location.state]);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData((prevFormData) => ({ ...prevFormData, [name]: value }));
-  };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -12,8 +12,6 @@ const Header = () => {
     
     useEffect(() => {
         const checkLoginStatus = () => {
-            // Kiểm tra trạng thái đăng nhập, ví dụ kiểm tra từ localStorage hoặc API
-            // console.log("checkLoginStatus: " + userId);
             const loggedIn = loginResponse ? true : false;
             setIsLoggedIn(loggedIn);
         };

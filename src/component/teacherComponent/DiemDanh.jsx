@@ -55,11 +55,11 @@ const DiemDanh = () => {
       await axios.post(`http://localhost:8080/api/attendance/classroom/${classId}`, {
         attendanceTime: currentTime,
       });
-      alert('Attendance records created successfully.');
+      alert('Đã tạo điểm danh.');
       fetchStudents();
     } catch (error) {
       console.error('Error creating attendance records:', error);
-      alert('Failed to create attendance records.');
+      alert(error.response.data.message);
     }
   };
 

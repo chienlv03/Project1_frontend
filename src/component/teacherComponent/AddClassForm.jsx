@@ -5,12 +5,16 @@ import axios from 'axios';
 
 // eslint-disable-next-line react/display-name
 const AddClassForm = React.memo(() => {
+  const [errorMessage, setErrorMessage] = useState('');
+
   const [formData, setFormData] = useState({
     name: '',
     classCode: '',
     startTime: '',
     capacity: ''
   });
+
+  // console.log("AddClassForm: ");
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,16 +57,17 @@ const AddClassForm = React.memo(() => {
       localStorage.removeItem('classId');
       navigate('/class-list');
     } catch (error) {
-      console.error('Error submitting form:', error.response?.data || error.message);
+      setErrorMessage(error.response.data.message);
     }
   };
 
   return (
-    <div className="p-4 content-center h-screen sm:ml-0 bg-[url('assets/img/bg-3.webp')] w-full bg-cover bg-center">
+    <div className="p-4 content-center h-screen sm:ml-0 ">
       <form
         className="mt-20 p-6 content-center max-w-3xl m-auto border-4 border-gray-200 border-double rounded-lg dark:border-gray-700"
         onSubmit={handleSubmit}
       >
+        
         <div className="relative z-0 w-full mb-5 group">
           <input
             type="text"
@@ -157,6 +162,7 @@ const AddClassForm = React.memo(() => {
             Cancel
           </button>
         </div>
+        {errorMessage && <p className="text-red-500">{errorMessage}</p>}
       </form>
     </div>
   );
